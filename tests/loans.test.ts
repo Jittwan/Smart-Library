@@ -1,96 +1,164 @@
 import { describe, it, expect } from "vitest";
 import {
-  addDays,
-  computeDueDate,
-  daysLate,
-  computeFine,
-  isOverdue,
+  getLoanPeriodByCategory,
+  calculateDueDate,
+  calculateFine,
+  countOverdueWeekdays,
+  evaluateBorrow,
   generateLoanCode,
-  LOAN_PERIOD_DAYS,
-  FINE_PER_DAY,
+  FINE_PER_WEEKDAY,
 } from "../lib/loans";
 
-describe("computeDueDate", () => {
-  it("adds the loan period by default", () => {
-    const borrowed = new Date("2026-01-01T10:00:00Z");
-    const due = computeDueDate(borrowed);
-    expect(due).toEqual(addDays(borrowed, LOAN_PERIOD_DAYS));
-  });
+// Reference weekdays in Jan 2026 (Jan 1 2026 is a Thursday):
+//   Mon Jan 5, Tue Jan 6, ... Fri Jan 9, Sat Jan 10, Sun Jan 11, Mon Jan 12
+const MON = new Date(2026, 0, 5);
+const TUE = new Date(2026, 0, 6);
+const FRI = new Date(2026, 0, 9);
+const SAT = new Date(2026, 0, 10);
+const SUN = new Date(2026, 0, 11);
+const NEXT_MON = new Date(2026, 0, 12);
 
-  it("does not mutate the input date", () => {
-    const borrowed = new Date("2026-01-01T10:00:00Z");
-    const snapshot = borrowed.getTime();
-    computeDueDate(borrowed);
-    expect(borrowed.getTime()).toBe(snapshot);
-  });
-});
-
-describe("daysLate", () => {
-  const due = new Date("2026-01-15T00:00:00Z");
-
-  it("is 0 when returned on the due date", () => {
-    expect(daysLate(due, new Date("2026-01-15T00:00:00Z"))).toBe(0);
-  });
-
-  it("is 0 when returned early", () => {
-    expect(daysLate(due, new Date("2026-01-10T00:00:00Z"))).toBe(0);
-  });
-
-  it("counts any part of a day late as a full day", () => {
-    expect(daysLate(due, new Date("2026-01-15T00:00:01Z"))).toBe(1);
-    expect(daysLate(due, new Date("2026-01-16T00:00:00Z"))).toBe(1);
-  });
-
-  it("counts multiple whole days", () => {
-    expect(daysLate(due, new Date("2026-01-18T00:00:00Z"))).toBe(3);
+describe("getLoanPeriodByCategory", () => {
+  it("returns the period for each category", () => {
+    expect(getLoanPeriodByCategory("textbook")).toBe(3);
+    expect(getLoanPeriodByCategory("general")).toBe(7);
+    expect(getLoanPeriodByCategory("novel")).toBe(14);
   });
 });
 
-describe("computeFine", () => {
-  const due = new Date("2026-01-15T00:00:00Z");
-
-  it("is 0 when not late", () => {
-    expect(computeFine(due, new Date("2026-01-15T00:00:00Z"))).toBe(0);
+describe("calculateDueDate", () => {
+  const loanDate = new Date(2026, 0, 5); // Monday
+  it("adds 3 days for a textbook", () => {
+    expect(calculateDueDate(loanDate, "textbook")).toEqual(new Date(2026, 0, 8));
   });
-
-  it("charges the per-day rate for each late day", () => {
-    expect(computeFine(due, new Date("2026-01-18T00:00:00Z"))).toBe(
-      3 * FINE_PER_DAY,
-    );
+  it("adds 7 days for a general book", () => {
+    expect(calculateDueDate(loanDate, "general")).toEqual(new Date(2026, 0, 12));
   });
-
-  it("respects a custom fine rate", () => {
-    expect(computeFine(due, new Date("2026-01-20T00:00:00Z"), 10)).toBe(50);
+  it("adds 14 days for a novel", () => {
+    expect(calculateDueDate(loanDate, "novel")).toEqual(new Date(2026, 0, 19));
   });
 });
 
-describe("isOverdue", () => {
-  const due = new Date("2026-01-15T00:00:00Z");
-  it("is false before the due date", () => {
-    expect(isOverdue(due, new Date("2026-01-14T23:59:59Z"))).toBe(false);
+describe("calculateFine — examples from the spec", () => {
+  it("due Monday, return Monday → 0", () => {
+    expect(calculateFine(MON, MON)).toBe(0);
   });
-  it("is true after the due date", () => {
-    expect(isOverdue(due, new Date("2026-01-15T00:00:01Z"))).toBe(true);
+
+  it("due Monday, return Tuesday → 1 weekday → 20", () => {
+    expect(calculateFine(MON, TUE)).toBe(FINE_PER_WEEKDAY);
+  });
+
+  it("due Friday, return Monday → count Monday only → 20", () => {
+    expect(calculateFine(FRI, NEXT_MON)).toBe(FINE_PER_WEEKDAY);
+  });
+
+  it("due Friday, return Sunday → 0 weekdays → 0", () => {
+    expect(calculateFine(FRI, SUN)).toBe(0);
+  });
+
+  it("return on the loan date → 0 regardless of category", () => {
+    const loanDate = MON;
+    for (const category of ["textbook", "general", "novel"] as const) {
+      const dueDate = calculateDueDate(loanDate, category);
+      expect(calculateFine(dueDate, loanDate, loanDate)).toBe(0);
+    }
+  });
+
+  it("no fine when return is on or before the due date", () => {
+    expect(calculateFine(FRI, FRI)).toBe(0); // on due date
+    expect(calculateFine(FRI, MON)).toBe(0); // before due date
+  });
+});
+
+describe("calculateFine — more cases", () => {
+  it("does not charge for an early return", () => {
+    expect(calculateFine(FRI, MON)).toBe(0);
+  });
+
+  it("counts a full week of overdue weekdays", () => {
+    // due Mon Jan 5, return Mon Jan 12: Tue–Fri (4) + Mon (1) = 5 weekdays
+    expect(calculateFine(MON, NEXT_MON)).toBe(5 * FINE_PER_WEEKDAY);
+  });
+
+  it("overdue only across the weekend is free", () => {
+    expect(calculateFine(FRI, SAT)).toBe(0);
+  });
+});
+
+describe("countOverdueWeekdays", () => {
+  it("excludes Saturday and Sunday", () => {
+    expect(countOverdueWeekdays(FRI, NEXT_MON)).toBe(1); // only Monday
+    expect(countOverdueWeekdays(MON, NEXT_MON)).toBe(5);
+    expect(countOverdueWeekdays(MON, MON)).toBe(0);
+  });
+});
+
+describe("evaluateBorrow", () => {
+  it("allows when within limits", () => {
+    expect(
+      evaluateBorrow({
+        activeLoanCount: 2,
+        hasOverdueLoan: false,
+        availableCopies: 1,
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  it("rejects when the member already has 3 active loans", () => {
+    const result = evaluateBorrow({
+      activeLoanCount: 3,
+      hasOverdueLoan: false,
+      availableCopies: 5,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toMatch(/3 active/);
+  });
+
+  it("rejects when the member has an overdue active loan", () => {
+    const result = evaluateBorrow({
+      activeLoanCount: 1,
+      hasOverdueLoan: true,
+      availableCopies: 5,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toMatch(/overdue/i);
+  });
+
+  it("rejects when no copies are available", () => {
+    const result = evaluateBorrow({
+      activeLoanCount: 0,
+      hasOverdueLoan: false,
+      availableCopies: 0,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toMatch(/no copies/i);
+  });
+
+  it("checks the active-loan limit before availability", () => {
+    const result = evaluateBorrow({
+      activeLoanCount: 3,
+      hasOverdueLoan: false,
+      availableCopies: 0,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toMatch(/3 active/);
   });
 });
 
 describe("generateLoanCode", () => {
   it("has the SL- prefix and expected length", () => {
-    const code = generateLoanCode();
-    expect(code).toMatch(/^SL-[A-Z2-9]{8}$/);
+    expect(generateLoanCode()).toMatch(/^SL-[A-Z2-9]{8}$/);
   });
 
   it("excludes ambiguous characters (0,1,I,O)", () => {
     for (let i = 0; i < 200; i++) {
-      const body = generateLoanCode().slice(3);
-      expect(body).not.toMatch(/[01IO]/);
+      expect(generateLoanCode().slice(3)).not.toMatch(/[01IO]/);
     }
   });
 
   it("is unique across many generations", () => {
     const codes = new Set<string>();
     for (let i = 0; i < 5000; i++) codes.add(generateLoanCode());
-    // Collisions across 5000 of 32^8 codes should be effectively impossible.
     expect(codes.size).toBe(5000);
   });
 });

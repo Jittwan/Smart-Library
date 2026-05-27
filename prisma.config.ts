@@ -18,6 +18,7 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    seed: "node prisma/seed.ts",
   },
   datasource: {
     // Migrations/introspection use a direct (non-pooled) connection when

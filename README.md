@@ -71,7 +71,13 @@ downloads an overdue report PDF.
 4. In the Supabase dashboard, create a **Storage bucket named `reports`**
    (used for the generated overdue PDFs).
 
-5. Run the dev server:
+5. (Optional) Seed the catalog with sample books:
+
+   ```bash
+   pnpm db:seed
+   ```
+
+6. Run the dev server:
 
    ```bash
    pnpm dev

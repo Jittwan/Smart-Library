@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
-import { computeFine, daysLate } from "@/lib/loans";
+import { calculateFine, countOverdueWeekdays } from "@/lib/loans";
 import { jsonError, jsonOk } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +20,8 @@ export async function GET() {
 
   const overdue = loans.map((loan) => ({
     ...loan,
-    daysOverdue: daysLate(loan.dueDate, now),
-    projectedFine: computeFine(loan.dueDate, now),
+    weekdaysOverdue: countOverdueWeekdays(loan.dueDate, now),
+    projectedFine: calculateFine(loan.dueDate, now, loan.borrowedAt),
   }));
 
   return jsonOk({ overdue });

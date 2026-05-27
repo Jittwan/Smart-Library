@@ -1,6 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { computeDueDate, computeFine, generateLoanCode } from "@/lib/loans";
+import {
+  calculateDueDate,
+  calculateFine,
+  evaluateBorrow,
+  generateLoanCode,
+  type BorrowDecision,
+  type LoanCategory,
+} from "@/lib/loans";
 
 /** Domain error that carries an HTTP status for the API layer. */
 export class LoanError extends Error {
@@ -13,35 +20,64 @@ export class LoanError extends Error {
 }
 
 /**
- * Borrow a book for a member. Atomically reserves a copy and creates a loan
- * with a unique loan code and a due date. Retries on the (rare) loan-code
- * collision.
+ * Whether a member may borrow a given book right now. Applies all three
+ * borrowing limits: max active loans, no overdue active loan, and availability.
  */
-export async function borrowBook(memberId: string, bookId: string) {
-  const duplicate = await prisma.loan.findFirst({
-    where: { memberId, bookId, status: "active" },
-  });
-  if (duplicate) {
-    throw new LoanError("You already have an active loan for this book", 409);
+export async function canBorrow(
+  memberId: string,
+  bookId: string,
+): Promise<BorrowDecision> {
+  const now = new Date();
+  const [activeLoanCount, overdueLoanCount, book] = await Promise.all([
+    prisma.loan.count({ where: { memberId, returnedAt: null } }),
+    prisma.loan.count({
+      where: { memberId, returnedAt: null, dueDate: { lt: now } },
+    }),
+    prisma.book.findUnique({ where: { id: bookId } }),
+  ]);
+
+  if (!book) {
+    return { ok: false, reason: "Book not found" };
   }
 
-  const borrowedAt = new Date();
-  const dueDate = computeDueDate(borrowedAt);
+  return evaluateBorrow({
+    activeLoanCount,
+    hasOverdueLoan: overdueLoanCount > 0,
+    availableCopies: book.availableCopies,
+  });
+}
+
+/**
+ * Borrow a book for a member. Enforces the borrowing limits, atomically
+ * reserves a copy, and creates a loan with a unique loan code and a due date
+ * based on the book's category. Retries on the (rare) loan-code collision.
+ */
+export async function borrowBook(memberId: string, bookId: string) {
+  const decision = await canBorrow(memberId, bookId);
+  if (!decision.ok) {
+    const status = decision.reason === "Book not found" ? 404 : 409;
+    throw new LoanError(decision.reason, status);
+  }
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const loanCode = generateLoanCode();
     try {
       return await prisma.$transaction(async (tx) => {
+        // Atomically reserve a copy; guards against a concurrent last copy.
         const reserved = await tx.book.updateMany({
           where: { id: bookId, availableCopies: { gt: 0 } },
           data: { availableCopies: { decrement: 1 } },
         });
-
         if (reserved.count === 0) {
-          const book = await tx.book.findUnique({ where: { id: bookId } });
-          if (!book) throw new LoanError("Book not found", 404);
           throw new LoanError("No copies available to borrow", 409);
         }
+
+        const book = await tx.book.findUniqueOrThrow({ where: { id: bookId } });
+        const borrowedAt = new Date();
+        const dueDate = calculateDueDate(
+          borrowedAt,
+          book.category as LoanCategory,
+        );
 
         return tx.loan.create({
           data: {
@@ -89,7 +125,7 @@ export async function returnLoan(loanId: string) {
     }
 
     const returnedAt = new Date();
-    const fineAmount = computeFine(loan.dueDate, returnedAt);
+    const fineAmount = calculateFine(loan.dueDate, returnedAt, loan.borrowedAt);
 
     await tx.book.update({
       where: { id: loan.bookId },

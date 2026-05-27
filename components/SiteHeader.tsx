@@ -19,12 +19,6 @@ export function SiteHeader() {
             Log in
           </Link>
           <Link
-            href="/signup"
-            className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
-            Sign up
-          </Link>
-          <Link
             href="/admin"
             className="rounded-md bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >

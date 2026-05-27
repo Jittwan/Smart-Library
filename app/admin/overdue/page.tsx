@@ -4,7 +4,7 @@ import { getAdminSession } from "@/lib/auth";
 import { AdminNav } from "@/components/AdminNav";
 import { ReturnButton } from "@/components/ReturnButton";
 import { formatDate, formatTHB } from "@/lib/format";
-import { computeFine, daysLate } from "@/lib/loans";
+import { calculateFine, countOverdueWeekdays } from "@/lib/loans";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,7 @@ export default async function AdminOverduePage() {
   });
 
   const totalFine = loans.reduce(
-    (sum, loan) => sum + computeFine(loan.dueDate, now),
+    (sum, loan) => sum + calculateFine(loan.dueDate, now, loan.borrowedAt),
     0,
   );
 
@@ -52,7 +52,7 @@ export default async function AdminOverduePage() {
               <th className="px-4 py-2">Email</th>
               <th className="px-4 py-2">Book</th>
               <th className="px-4 py-2">Due</th>
-              <th className="px-4 py-2 text-right">Days late</th>
+              <th className="px-4 py-2 text-right">Weekdays late</th>
               <th className="px-4 py-2 text-right">Fine</th>
               <th className="px-4 py-2 text-right">Action</th>
             </tr>
@@ -72,10 +72,10 @@ export default async function AdminOverduePage() {
                   <td className="px-4 py-2">{loan.book.title}</td>
                   <td className="px-4 py-2">{formatDate(loan.dueDate)}</td>
                   <td className="px-4 py-2 text-right">
-                    {daysLate(loan.dueDate, now)}
+                    {countOverdueWeekdays(loan.dueDate, now)}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {formatTHB(computeFine(loan.dueDate, now))}
+                    {formatTHB(calculateFine(loan.dueDate, now, loan.borrowedAt))}
                   </td>
                   <td className="px-4 py-2 text-right">
                     <ReturnButton loanId={loan.id} />

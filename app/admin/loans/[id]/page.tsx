@@ -5,7 +5,7 @@ import { getAdminSession } from "@/lib/auth";
 import { AdminNav } from "@/components/AdminNav";
 import { ReturnButton } from "@/components/ReturnButton";
 import { formatDate, formatTHB, categoryLabel } from "@/lib/format";
-import { computeFine, daysLate, isOverdue } from "@/lib/loans";
+import { calculateFine, countOverdueWeekdays, isOverdue } from "@/lib/loans";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ export default async function LoanDetailPage({
   const isActive = loan.status === "active";
   const overdue = isActive && isOverdue(loan.dueDate, now);
   const projectedFine = isActive
-    ? computeFine(loan.dueDate, now)
+    ? calculateFine(loan.dueDate, now, loan.borrowedAt)
     : loan.fineAmount;
 
   const rows: { label: string; value: React.ReactNode }[] = [
@@ -51,9 +51,9 @@ export default async function LoanDetailPage({
       value: loan.returnedAt ? formatDate(loan.returnedAt) : "—",
     },
     {
-      label: isActive ? "Days overdue" : "Fine",
+      label: isActive ? "Weekdays overdue" : "Fine",
       value: isActive
-        ? String(daysLate(loan.dueDate, now))
+        ? String(countOverdueWeekdays(loan.dueDate, now))
         : formatTHB(loan.fineAmount),
     },
   ];

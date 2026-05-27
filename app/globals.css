@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Force a light theme: only apply `dark:` styles when a `.dark` class is
+   present (which we never add), so the site stays white regardless of the
+   OS color scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,13 +15,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -38,10 +36,4 @@ body {
 .input:focus {
   outline: 2px solid #71717a;
   outline-offset: 1px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .input {
-    border-color: #3f3f46;
-  }
 }

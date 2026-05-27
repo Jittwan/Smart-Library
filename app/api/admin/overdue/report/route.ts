@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
-import { computeFine, daysLate } from "@/lib/loans";
+import { calculateFine, countOverdueWeekdays } from "@/lib/loans";
 import { buildOverdueReportPdf, type OverdueRow } from "@/lib/pdf";
 import { uploadOverdueReport } from "@/lib/supabase";
 import { jsonError } from "@/lib/api";
@@ -26,8 +26,8 @@ export async function GET() {
     bookTitle: loan.book.title,
     author: loan.book.author,
     dueDate: loan.dueDate,
-    daysOverdue: daysLate(loan.dueDate, now),
-    fine: computeFine(loan.dueDate, now),
+    daysOverdue: countOverdueWeekdays(loan.dueDate, now),
+    fine: calculateFine(loan.dueDate, now, loan.borrowedAt),
   }));
 
   const pdfBytes = await buildOverdueReportPdf(rows, now);

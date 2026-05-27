@@ -1,11 +1,10 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getMemberSession } from "@/lib/auth";
 import { BorrowButton } from "@/components/BorrowButton";
 import { BOOK_CATEGORIES } from "@/lib/validation";
 import { categoryLabel } from "@/lib/format";
-import { LOAN_PERIOD_DAYS } from "@/lib/loans";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +13,10 @@ export default async function CatalogPage({
 }: {
   searchParams: Promise<{ q?: string; category?: string }>;
 }) {
-  const { q, category } = await searchParams;
   const session = await getMemberSession();
+  if (!session) redirect("/login?next=/");
+
+  const { q, category } = await searchParams;
 
   const where: Prisma.BookWhereInput = {};
   const query = q?.trim();
@@ -39,20 +40,8 @@ export default async function CatalogPage({
       <div>
         <h1 className="text-2xl font-semibold">Catalog</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Browse books and borrow for {LOAN_PERIOD_DAYS} days.
-          {!session && (
-            <>
-              {" "}
-              <Link href="/login" className="underline">
-                Log in
-              </Link>{" "}
-              or{" "}
-              <Link href="/signup" className="underline">
-                sign up
-              </Link>{" "}
-              to borrow.
-            </>
-          )}
+          Browse books and borrow them. Loan period: textbook 3 days, general 7
+          days, novel 14 days.
         </p>
       </div>
 
@@ -113,19 +102,10 @@ export default async function CatalogPage({
                   </span>
                 </div>
               </div>
-              {session ? (
-                <BorrowButton
-                  bookId={book.id}
-                  available={book.availableCopies > 0}
-                />
-              ) : (
-                <Link
-                  href="/login?next=/"
-                  className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  Log in to borrow
-                </Link>
-              )}
+              <BorrowButton
+                bookId={book.id}
+                available={book.availableCopies > 0}
+              />
             </li>
           ))}
         </ul>
