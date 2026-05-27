@@ -31,53 +31,50 @@ export default async function AdminOverduePage() {
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Overdue loans</h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <h1 className="font-display text-3xl font-semibold">Overdue loans</h1>
+          <p className="text-sm text-muted">
             {loans.length} overdue · {formatTHB(totalFine)} in projected fines
           </p>
         </div>
-        <a
-          href="/api/admin/overdue/report"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900"
-        >
+        <a href="/api/admin/overdue/report" className="btn btn-primary">
           Download PDF report
         </a>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-100 text-left text-xs uppercase text-zinc-500 dark:bg-zinc-800">
+          <thead className="bg-surface-2 text-left text-xs uppercase text-muted">
             <tr>
-              <th className="px-4 py-2">Member</th>
-              <th className="px-4 py-2">Email</th>
-              <th className="px-4 py-2">Book</th>
-              <th className="px-4 py-2">Due</th>
-              <th className="px-4 py-2 text-right">Weekdays late</th>
-              <th className="px-4 py-2 text-right">Fine</th>
-              <th className="px-4 py-2 text-right">Action</th>
+              <th className="px-4 py-2.5">Member</th>
+              <th className="px-4 py-2.5">Email</th>
+              <th className="px-4 py-2.5">Book</th>
+              <th className="px-4 py-2.5">Due</th>
+              <th className="px-4 py-2.5 text-right">Weekdays late</th>
+              <th className="px-4 py-2.5 text-right">Fine</th>
+              <th className="px-4 py-2.5 text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
+          <tbody className="divide-y divide-border">
             {loans.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-zinc-500">
+                <td colSpan={7} className="px-4 py-6 text-center text-muted">
                   No overdue loans. 🎉
                 </td>
               </tr>
             ) : (
               loans.map((loan) => (
                 <tr key={loan.id}>
-                  <td className="px-4 py-2 font-medium">{loan.member.name}</td>
-                  <td className="px-4 py-2">{loan.member.email}</td>
-                  <td className="px-4 py-2">{loan.book.title}</td>
-                  <td className="px-4 py-2">{formatDate(loan.dueDate)}</td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2.5 font-medium">{loan.member.name}</td>
+                  <td className="px-4 py-2.5">{loan.member.email}</td>
+                  <td className="px-4 py-2.5">{loan.book.title}</td>
+                  <td className="px-4 py-2.5">{formatDate(loan.dueDate)}</td>
+                  <td className="px-4 py-2.5 text-right">
                     {countOverdueWeekdays(loan.dueDate, now)}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2.5 text-right">
                     {formatTHB(calculateFine(loan.dueDate, now, loan.borrowedAt))}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2.5 text-right">
                     <ReturnButton loanId={loan.id} />
                   </td>
                 </tr>

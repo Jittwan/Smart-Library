@@ -30,34 +30,28 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-6">
       <AdminNav email={admin.email} />
-      <h1 className="text-2xl font-semibold">Librarian dashboard</h1>
+      <h1 className="font-display text-3xl font-semibold">
+        Librarian dashboard
+      </h1>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((stat) => (
           <Link
             key={stat.label}
             href={stat.href}
-            className="rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900"
+            className="card p-5 transition hover:border-[var(--accent)]"
           >
-            <p className="text-3xl font-semibold">{stat.value}</p>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-              {stat.label}
-            </p>
+            <p className="font-display text-3xl font-semibold">{stat.value}</p>
+            <p className="mt-1 text-sm text-muted">{stat.label}</p>
           </Link>
         ))}
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Link
-          href="/admin/books"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900"
-        >
+        <Link href="/admin/books" className="btn btn-primary">
           Add a book
         </Link>
-        <Link
-          href="/admin/overdue"
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-        >
+        <Link href="/admin/overdue" className="btn btn-outline">
           Overdue report
         </Link>
       </div>

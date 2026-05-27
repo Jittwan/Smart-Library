@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Lora } from "next/font/google";
 import "./globals.css";
 import { APP_NAME } from "@/lib/app";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -11,6 +11,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const lora = Lora({
+  variable: "--font-serif",
   subsets: ["latin"],
 });
 
@@ -27,13 +32,18 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${lora.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <SiteHeader />
-        <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-10">
           {children}
         </main>
+        <footer className="border-t border-border">
+          <div className="max-w-5xl mx-auto px-4 py-6 text-sm text-muted">
+            {APP_NAME} · a small private lending library
+          </div>
+        </footer>
       </body>
     </html>
   );

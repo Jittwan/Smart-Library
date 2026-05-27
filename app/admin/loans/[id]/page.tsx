@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { AdminNav } from "@/components/AdminNav";
-import { ReturnButton } from "@/components/ReturnButton";
+import { ReturnForm } from "@/components/ReturnForm";
 import { formatDate, formatTHB, categoryLabel } from "@/lib/format";
 import { calculateFine, countOverdueWeekdays, isOverdue } from "@/lib/loans";
 
@@ -33,12 +33,12 @@ export default async function LoanDetailPage({
     : loan.fineAmount;
 
   const rows: { label: string; value: React.ReactNode }[] = [
-    { label: "Loan code", value: <span className="font-mono">{loan.loanCode}</span> },
     {
-      label: "Status",
-      value: overdue ? "overdue" : loan.status,
+      label: "Loan code",
+      value: <span className="font-mono">{loan.loanCode}</span>,
     },
-    { label: "Member", value: `${loan.member.name}` },
+    { label: "Status", value: overdue ? "overdue" : loan.status },
+    { label: "Member", value: loan.member.name },
     { label: "Email", value: loan.member.email },
     { label: "Phone", value: loan.member.phone },
     { label: "Book", value: loan.book.title },
@@ -63,30 +63,34 @@ export default async function LoanDetailPage({
       <AdminNav email={admin.email} />
 
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Loan detail</h1>
-        <Link href="/admin/loans" className="text-sm underline">
+        <h1 className="font-display text-3xl font-semibold">Loan detail</h1>
+        <Link href="/admin/loans" className="text-sm text-[var(--accent)] underline">
           ← Back to loans
         </Link>
       </div>
 
-      <dl className="grid grid-cols-1 gap-x-8 gap-y-3 rounded-lg border border-zinc-200 bg-white p-5 sm:grid-cols-2 dark:border-zinc-800 dark:bg-zinc-900">
+      <dl className="card grid grid-cols-1 gap-x-8 gap-y-3 p-6 sm:grid-cols-2">
         {rows.map((row) => (
-          <div key={row.label} className="flex justify-between gap-4 border-b border-zinc-100 pb-2 dark:border-zinc-800">
-            <dt className="text-sm text-zinc-500">{row.label}</dt>
-            <dd className="text-sm font-medium text-right">{row.value}</dd>
+          <div
+            key={row.label}
+            className="flex justify-between gap-4 border-b border-border pb-2"
+          >
+            <dt className="text-sm text-muted">{row.label}</dt>
+            <dd className="text-right text-sm font-medium">{row.value}</dd>
           </div>
         ))}
       </dl>
 
       {isActive && (
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
+        <div className="card flex flex-wrap items-center justify-between gap-4 border-[var(--accent)] p-5">
           <div className="text-sm">
             <p className="font-medium">Confirm return</p>
-            <p className="text-zinc-600 dark:text-zinc-400">
+            <p className="text-muted">
               Returning now would record a fine of {formatTHB(projectedFine)}.
+              Set a return date to test other fines.
             </p>
           </div>
-          <ReturnButton loanId={loan.id} />
+          <ReturnForm loanId={loan.id} />
         </div>
       )}
     </div>

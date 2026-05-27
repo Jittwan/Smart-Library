@@ -46,11 +46,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="text-2xl font-semibold">Create your account</h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+    <div className="mx-auto max-w-md card p-7">
+      <h1 className="font-display text-2xl font-semibold">Create your account</h1>
+      <p className="mt-1 text-sm text-muted">
         Already a member?{" "}
-        <Link href="/login" className="underline">
+        <Link href="/login" className="text-[var(--accent)] underline">
           Log in
         </Link>
         .
@@ -94,12 +94,12 @@ export default function SignupPage() {
           />
         </Field>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[#dc2626]">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-zinc-900 px-4 py-2 font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+          className="btn btn-primary w-full"
         >
           {loading ? "Creating account…" : "Sign up"}
         </button>

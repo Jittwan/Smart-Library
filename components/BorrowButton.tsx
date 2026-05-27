@@ -55,18 +55,14 @@ export function BorrowButton({
         type="button"
         onClick={handleBorrow}
         disabled={!available || loading || pending}
-        className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="btn btn-primary"
       >
         {loading || pending ? "Borrowing…" : available ? "Borrow" : "Unavailable"}
       </button>
       {message && (
-        <p className="text-xs text-emerald-700 dark:text-emerald-400">
-          {message}
-        </p>
+        <p className="text-right text-xs text-[var(--accent)]">{message}</p>
       )}
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-right text-xs text-[#dc2626]">{error}</p>}
     </div>
   );
 }

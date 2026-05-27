@@ -107,6 +107,26 @@ unique loan-code generation, input validation and PDF generation.
 pnpm test
 ```
 
+### Setting dates for fine testing (librarian)
+
+Fines depend on the loan/due/return dates, so the librarian can set them to any
+value (past, present, or now) to exercise the rules without waiting real days:
+
+- **Create a loan with explicit dates** — Admin → **Loans** →
+  **“Create test loan (set dates)”**. Choose a member and book, then set the
+  **loan date**, **due date** (blank = computed by category) and **return date**
+  (blank = still active). This bypasses the borrowing limits on purpose.
+  API: `POST /api/admin/loans` with
+  `{ memberId, bookId, borrowedAt?, dueDate?, returnedAt? }`.
+
+- **Return with a chosen date** — Admin → **Loans** → click a loan code →
+  on the detail page set **Return date** (blank = now) and **Mark returned**.
+  The fine is computed from that date.
+  API: `POST /api/loans/{id}/return` with `{ returnedAt? }`.
+
+Dates accept ISO strings (e.g. `2026-05-22` or `2026-05-22T09:00`). All of these
+require a librarian session. You can also seed sample books with `pnpm db:seed`.
+
 ## Build & deploy
 
 ```bash

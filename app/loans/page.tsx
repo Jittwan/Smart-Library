@@ -31,8 +31,8 @@ export default async function LoansPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">My loans</h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <h1 className="font-display text-3xl font-semibold">My loans</h1>
+          <p className="text-sm text-muted">
             {member.name} · {member.email}
           </p>
         </div>
@@ -40,85 +40,81 @@ export default async function LoansPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Active loans</h2>
+        <h2 className="font-display text-lg font-semibold">Active loans</h2>
         {active.length === 0 ? (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             No active loans.{" "}
-            <Link href="/" className="underline">
+            <Link href="/" className="text-[var(--accent)] underline">
               Browse the catalog
             </Link>
             .
           </p>
         ) : (
-          <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="grid gap-4 sm:grid-cols-2">
             {active.map((loan) => {
               const overdue = isOverdue(loan.dueDate, now);
               return (
-                <li key={loan.id} className="p-4">
-                  <div className="flex items-center justify-between gap-4">
+                <article key={loan.id} className="card p-5">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{loan.book.title}</p>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                        {loan.book.author}
-                      </p>
+                      <h3 className="font-display font-semibold leading-snug">
+                        {loan.book.title}
+                      </h3>
+                      <p className="text-sm text-muted">{loan.book.author}</p>
                     </div>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
-                        overdue
-                          ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
-                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                      }`}
+                      className={`badge ${overdue ? "badge-warn" : "badge-ok"}`}
                     >
                       {overdue ? "Overdue" : "Active"}
                     </span>
                   </div>
-                  <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400 sm:grid-cols-3">
+                  <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
                     <div>
-                      <dt className="font-medium text-zinc-500">Loan code</dt>
+                      <dt className="text-muted">Loan code</dt>
                       <dd className="font-mono">{loan.loanCode}</dd>
                     </div>
                     <div>
-                      <dt className="font-medium text-zinc-500">Borrowed</dt>
+                      <dt className="text-muted">Borrowed</dt>
                       <dd>{formatDate(loan.borrowedAt)}</dd>
                     </div>
                     <div>
-                      <dt className="font-medium text-zinc-500">Due</dt>
+                      <dt className="text-muted">Due</dt>
                       <dd>{formatDate(loan.dueDate)}</dd>
                     </div>
                   </dl>
-                </li>
+                </article>
               );
             })}
-          </ul>
+          </div>
         )}
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">History</h2>
+        <h2 className="font-display text-lg font-semibold">History</h2>
         {history.length === 0 ? (
-          <p className="text-sm text-zinc-500">No returned loans yet.</p>
+          <p className="text-sm text-muted">No returned loans yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-100 text-left text-xs uppercase text-zinc-500 dark:bg-zinc-800">
+              <thead className="bg-surface-2 text-left text-xs uppercase text-muted">
                 <tr>
-                  <th className="px-4 py-2">Book</th>
-                  <th className="px-4 py-2">Loan code</th>
-                  <th className="px-4 py-2">Returned</th>
-                  <th className="px-4 py-2 text-right">Fine</th>
+                  <th className="px-4 py-2.5">Book</th>
+                  <th className="px-4 py-2.5">Loan code</th>
+                  <th className="px-4 py-2.5">Returned</th>
+                  <th className="px-4 py-2.5 text-right">Fine</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
+              <tbody className="divide-y divide-border">
                 {history.map((loan) => (
                   <tr key={loan.id}>
-                    <td className="px-4 py-2">{loan.book.title}</td>
-                    <td className="px-4 py-2 font-mono text-xs">
+                    <td className="px-4 py-2.5">{loan.book.title}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs">
                       {loan.loanCode}
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-2.5">
                       {loan.returnedAt ? formatDate(loan.returnedAt) : "—"}
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       {formatTHB(loan.fineAmount)}
                     </td>
                   </tr>

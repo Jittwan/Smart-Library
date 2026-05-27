@@ -2,7 +2,9 @@ import type { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
-import { jsonError, jsonOk } from "@/lib/api";
+import { createAdminLoan, LoanError } from "@/lib/loan-service";
+import { adminCreateLoanSchema } from "@/lib/validation";
+import { jsonError, jsonOk, validationError } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -30,4 +32,31 @@ export async function GET(request: NextRequest) {
   });
 
   return jsonOk({ loans });
+}
+
+// Librarian testing helper: create a loan with explicit loan/due/return dates
+// so fines can be tested instantly. Bypasses borrowing limits on purpose.
+export async function POST(request: NextRequest) {
+  const admin = await getAdminSession();
+  if (!admin) return jsonError("Unauthorized", 401);
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid request body");
+  }
+
+  const parsed = adminCreateLoanSchema.safeParse(body);
+  if (!parsed.success) return validationError(parsed.error);
+
+  try {
+    const loan = await createAdminLoan(parsed.data);
+    return jsonOk({ loan }, 201);
+  } catch (error) {
+    if (error instanceof LoanError) {
+      return jsonError(error.message, error.status);
+    }
+    throw error;
+  }
 }

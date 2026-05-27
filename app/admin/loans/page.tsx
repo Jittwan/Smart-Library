@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { AdminNav } from "@/components/AdminNav";
 import { ReturnButton } from "@/components/ReturnButton";
+import { AdminCreateLoanForm } from "@/components/AdminCreateLoanForm";
 import { formatDate, formatTHB } from "@/lib/format";
 import { isOverdue } from "@/lib/loans";
 
@@ -22,7 +23,10 @@ export default async function AdminLoansPage({
 
   const { memberId, status } = await searchParams;
 
-  const members = await prisma.member.findMany({ orderBy: { name: "asc" } });
+  const [members, books] = await Promise.all([
+    prisma.member.findMany({ orderBy: { name: "asc" } }),
+    prisma.book.findMany({ orderBy: { title: "asc" } }),
+  ]);
 
   const where: Prisma.LoanWhereInput = {};
   if (memberId) where.memberId = memberId;
@@ -41,14 +45,16 @@ export default async function AdminLoansPage({
   return (
     <div className="space-y-6">
       <AdminNav email={admin.email} />
-      <h1 className="text-2xl font-semibold">Loans</h1>
+      <h1 className="font-display text-3xl font-semibold">Loans</h1>
+
+      <AdminCreateLoanForm members={members} books={books} />
 
       <form method="get" className="flex flex-wrap items-end gap-2">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-zinc-500">
+          <span className="mb-1 block text-xs font-medium text-muted">
             Member
           </span>
-          <select name="memberId" defaultValue={memberId ?? ""} className="input">
+          <select name="memberId" defaultValue={memberId ?? ""} className="input w-auto">
             <option value="">All members</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
@@ -58,10 +64,10 @@ export default async function AdminLoansPage({
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-zinc-500">
+          <span className="mb-1 block text-xs font-medium text-muted">
             Status
           </span>
-          <select name="status" defaultValue={status ?? ""} className="input">
+          <select name="status" defaultValue={status ?? ""} className="input w-auto">
             <option value="">All</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -70,38 +76,32 @@ export default async function AdminLoansPage({
             ))}
           </select>
         </label>
-        <button
-          type="submit"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900"
-        >
+        <button type="submit" className="btn btn-primary">
           Filter
         </button>
-        <Link
-          href="/admin/loans"
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-        >
+        <Link href="/admin/loans" className="btn btn-outline">
           Reset
         </Link>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-100 text-left text-xs uppercase text-zinc-500 dark:bg-zinc-800">
+          <thead className="bg-surface-2 text-left text-xs uppercase text-muted">
             <tr>
-              <th className="px-4 py-2">Loan code</th>
-              <th className="px-4 py-2">Member</th>
-              <th className="px-4 py-2">Book</th>
-              <th className="px-4 py-2">Borrowed</th>
-              <th className="px-4 py-2">Due</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2 text-right">Fine</th>
-              <th className="px-4 py-2 text-right">Action</th>
+              <th className="px-4 py-2.5">Loan code</th>
+              <th className="px-4 py-2.5">Member</th>
+              <th className="px-4 py-2.5">Book</th>
+              <th className="px-4 py-2.5">Borrowed</th>
+              <th className="px-4 py-2.5">Due</th>
+              <th className="px-4 py-2.5">Status</th>
+              <th className="px-4 py-2.5 text-right">Fine</th>
+              <th className="px-4 py-2.5 text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
+          <tbody className="divide-y divide-border">
             {loans.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-zinc-500">
+                <td colSpan={8} className="px-4 py-6 text-center text-muted">
                   No loans found.
                 </td>
               </tr>
@@ -109,9 +109,14 @@ export default async function AdminLoansPage({
               loans.map((loan) => {
                 const overdue =
                   loan.status === "active" && isOverdue(loan.dueDate, now);
+                const badgeClass = overdue
+                  ? "badge-warn"
+                  : loan.status === "returned"
+                    ? "badge-muted"
+                    : "badge-ok";
                 return (
                   <tr key={loan.id}>
-                    <td className="px-4 py-2 font-mono text-xs">
+                    <td className="px-4 py-2.5 font-mono text-xs">
                       <Link
                         href={`/admin/loans/${loan.id}`}
                         className="hover:underline"
@@ -119,31 +124,23 @@ export default async function AdminLoansPage({
                         {loan.loanCode}
                       </Link>
                     </td>
-                    <td className="px-4 py-2">{loan.member.name}</td>
-                    <td className="px-4 py-2">{loan.book.title}</td>
-                    <td className="px-4 py-2">{formatDate(loan.borrowedAt)}</td>
-                    <td className="px-4 py-2">{formatDate(loan.dueDate)}</td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
-                          overdue
-                            ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
-                            : loan.status === "returned"
-                              ? "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
-                              : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                        }`}
-                      >
+                    <td className="px-4 py-2.5">{loan.member.name}</td>
+                    <td className="px-4 py-2.5">{loan.book.title}</td>
+                    <td className="px-4 py-2.5">{formatDate(loan.borrowedAt)}</td>
+                    <td className="px-4 py-2.5">{formatDate(loan.dueDate)}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`badge ${badgeClass}`}>
                         {overdue ? "overdue" : loan.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       {formatTHB(loan.fineAmount)}
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       {loan.status === "active" ? (
                         <ReturnButton loanId={loan.id} />
                       ) : (
-                        <span className="text-xs text-zinc-400">—</span>
+                        <span className="text-xs text-muted">—</span>
                       )}
                     </td>
                   </tr>
