@@ -1,0 +1,65 @@
+// Smart Library — lending system
+// Prisma schema: Member, Book, Loan
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BookCategory {
+  textbook
+  general
+  novel
+}
+
+enum LoanStatus {
+  active
+  returned
+  overdue
+}
+
+model Member {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String
+  passwordHash String
+  loans        Loan[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Book {
+  id             String       @id @default(cuid())
+  title          String
+  author         String
+  category       BookCategory
+  copies         Int
+  availableCopies Int
+  loans          Loan[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Loan {
+  id         String     @id @default(cuid())
+  loanCode   String     @unique
+  memberId   String
+  member     Member     @relation(fields: [memberId], references: [id])
+  bookId     String
+  book       Book       @relation(fields: [bookId], references: [id])
+  borrowedAt DateTime   @default(now())
+  dueDate    DateTime
+  returnedAt DateTime?
+  fineAmount Int        @default(0)
+  status     LoanStatus @default(active)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([memberId])
+  @@index([bookId])
+  @@index([status])
+}
